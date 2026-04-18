@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Tambah Menu Baru</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 40px; }
+        .form-box { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="form-box">
+    <h2>Tambah Menu</h2>
+    <input type="text" id="nama" placeholder="Nama Menu">
+    <input type="number" id="harga" placeholder="Harga (Rp)">
+    <input type="file" id="foto" accept="image/*">
+    <select id="stok">
+        <option value="1">Tersedia</option>
+        <option value="0">Habis (Sold Out)</option>
+    </select>
+    <button id="btn-upload">Simpan ke Katalog</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Masukkan Config Firebase kamu di sini
+    const firebaseConfig = {
+        apiKey: "AIzaSyCxtwlN9d2eQxlhaMfcqFYy3HkzFhig-KY",
+        authDomain: "kedai-mya.firebaseapp.com",
+        projectId: "kedai-mya",
+        storageBucket: "kedai-mya.firebasestorage.app",
+        messagingSenderId: "614341456264",
+        appId: "1:614341456264:web:c62db51f5135493f23ca3d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById('btn-upload').onclick = async () => {
+        const fileInput = document.getElementById('foto');
+        const nama = document.getElementById('nama').value;
+        const harga = document.getElementById('harga').value;
+        const stok = document.getElementById('stok').value;
+
+        if(!fileInput.files[0] || !nama) return alert("Data belum lengkap!");
+
+        // 1. "Salaman" dengan Cloudinary (Titip Foto)
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('upload_preset', 'katalog_preset'); // Nama preset kamu
+
+        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/dkuislfxc/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const cloudData = await cloudRes.json();
+        
+        // 2. "Catat" Link Foto dari Cloudinary ke Firebase
+        await addDoc(collection(db, "menu_katalog"), {
+            nama,
+            harga: parseInt(harga),
+            img: cloudData.secure_url, // JEMBATANNYA DI SINI
+            stok: parseInt(stok),
+            createdAt: Date.now()
+        });
+
+        alert("Menu Berhasil Ditambah!");
+        location.reload();
+    };
+</script>
+</body>
+</html>
+
